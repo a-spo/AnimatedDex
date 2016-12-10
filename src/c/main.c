@@ -1,4 +1,5 @@
 #include <pebble.h>
+#define TAP_DURATION 5500
 
 static Window *s_window;
 static GBitmapSequence *s_sequence;
@@ -16,12 +17,13 @@ static int s_battery_level;
 static Layer *s_battery_level_layer;
 static GBitmap *s_battery_bitmap;
 static BitmapLayer *s_battery_image_layer;
+int taps=0;
 //*****************************************************************************//
 //                Change these according to your preferences                   //
 // Choose 1, 2, 3, 5, 10, or 30 to update every respective number of  minute(s)
 static int refresh_time = 10;
 //Change names of resource to the names that you created. KEEP THIS TO ONLY 4 TOTAL APNGS
-static uint32_t pokemon_list[4] = {RESOURCE_ID_LUXRAY, RESOURCE_ID_LANTURN, RESOURCE_ID_AZUMARILL, RESOURCE_ID_M_ABSOL};
+static uint32_t pokemon_list[3] = {RESOURCE_ID_CHARMANDER, RESOURCE_ID_CHARMANDER_2, RESOURCE_ID_CHARMANDER_3};
 //***********************************************************//
 static bool animate = true;
 
@@ -113,11 +115,29 @@ static void handle_focus(bool in_focus){
   app_timer_register(10000, stop_animation, NULL);
 }
 
+void timer_callback(void *data){
+  taps=0;
+  animate = true;
+    app_timer_register(1, timer_handler, NULL);
+    app_timer_register(10000, stop_animation, NULL);
+}
+
 static void handle_tap(AccelAxisType axis, int32_t direction){
   //Animate for 10 seconds on tap
+  /*
   animate = true;
   app_timer_register(1, timer_handler, NULL);
   app_timer_register(10000, stop_animation, NULL);
+  */
+  ///*
+  if(taps==0){
+    app_timer_register(TAP_DURATION, timer_callback, NULL);
+    taps = 2;
+    animate = true;
+    app_timer_register(1, timer_handler, NULL);
+    app_timer_register(10000, stop_animation, NULL);
+  }
+  //*/
 }
 
 static void update_sequence(){
@@ -126,10 +146,12 @@ static void update_sequence(){
     s_sequence = NULL;
   }
   if(s_bitmap) {
+    bitmap_layer_set_bitmap(s_bitmap_layer, NULL);
     gbitmap_destroy(s_bitmap);
     s_bitmap = NULL;
   }
-  int random_num = rand() % 4;
+  int length = sizeof(pokemon_list)/sizeof(pokemon_list[0]);
+  int random_num = rand() % length;
   s_sequence = gbitmap_sequence_create_with_resource(pokemon_list[random_num]);
   s_bitmap = gbitmap_create_blank(gbitmap_sequence_get_bitmap_size(s_sequence), GBitmapFormat8Bit);
   uint32_t first_delay_ms = 5;
@@ -188,7 +210,7 @@ static void main_window_load(Window *window){
   bluetooth_callback(connection_service_peek_pebble_app_connection());
   
   // Create sequence
-  int random_num = rand() % 4;
+  int random_num = rand() % 5;
   s_sequence = gbitmap_sequence_create_with_resource(pokemon_list[random_num]);
   //s_sequence = gbitmap_sequence_create_with_resource(my_pokemon);
 
